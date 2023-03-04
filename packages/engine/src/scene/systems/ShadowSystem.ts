@@ -1,12 +1,16 @@
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import {
   Box3,
+  BoxGeometry,
   DirectionalLight,
   DoubleSide,
   Group,
   InstancedMesh,
+  Material,
   Matrix4,
+  Mesh,
   MeshBasicMaterial,
+  Object3D,
   PerspectiveCamera,
   PlaneGeometry,
   Quaternion,
@@ -16,8 +20,8 @@ import {
   Vector3
 } from 'three'
 
-import config from '@xrengine/common/src/config'
-import { getState, startReactor, useHookstate } from '@xrengine/hyperflux'
+import config from '@etherealengine/common/src/config'
+import { getState, hookstate, startReactor, useHookstate } from '@etherealengine/hyperflux'
 
 import { AssetLoader } from '../../assets/classes/AssetLoader'
 import { CSM } from '../../assets/csm/CSM'
@@ -26,6 +30,7 @@ import { Engine } from '../../ecs/classes/Engine'
 import { Entity, UndefinedEntity } from '../../ecs/classes/Entity'
 import { World } from '../../ecs/classes/World'
 import {
+  addComponent,
   defineQuery,
   getComponent,
   hasComponent,
@@ -36,17 +41,22 @@ import {
   useOptionalComponent,
   useQuery
 } from '../../ecs/functions/ComponentFunctions'
+import { createEntity, entityExists, removeEntity } from '../../ecs/functions/EntityFunctions'
+import { addEntityNodeChild } from '../../ecs/functions/EntityTree'
 import { startQueryReactor } from '../../ecs/functions/SystemFunctions'
 import { getShadowsEnabled, useShadowsEnabled } from '../../renderer/functions/RenderSettingsFunction'
 import { RendererState } from '../../renderer/RendererState'
 import { EngineRenderer, getRendererSceneMetadataState } from '../../renderer/WebGLRendererSystem'
+import { setLocalTransformComponent, TransformComponent } from '../../transform/components/TransformComponent'
 import { XRState } from '../../xr/XRState'
 import { DirectionalLightComponent } from '../components/DirectionalLightComponent'
 import { DropShadowComponent } from '../components/DropShadowComponent'
-import { GroupComponent } from '../components/GroupComponent'
+import { addObjectToGroup, GroupComponent } from '../components/GroupComponent'
+import { NameComponent } from '../components/NameComponent'
 import { ShadowComponent } from '../components/ShadowComponent'
 import { VisibleComponent } from '../components/VisibleComponent'
 import { ObjectLayers } from '../constants/ObjectLayers'
+import { enableObjectLayer } from '../functions/setObjectLayers'
 
 export const shadowDirection = new Vector3(0, -1, 0)
 const shadowMatrix = new Matrix4()
@@ -64,38 +74,23 @@ export default async function ShadowSystem(world: World) {
   csmGroup.name = 'CSM-group'
   Engine.instance.currentWorld.scene.add(csmGroup)
 
-  const csmReactor = startReactor(() => {
-    const lightEstimator = useHookstate(xrState.isEstimatingLight)
-    const directionalLights = useQuery([DirectionalLightComponent])
-    const shadowsEnabled = useShadowsEnabled()
-
-    let activeLight: DirectionalLight | undefined
-
-    // TODO: convert light estimator to an entity to simplify all this logic
-    let activeDirectionalLightEntity = UndefinedEntity
-    if (lightEstimator.value) activeLight = xrState.lightEstimator.value!.directionalLight
-    else
-      for (const entity of directionalLights) {
-        const component = getComponent(entity, DirectionalLightComponent)
-        const visible = hasComponent(entity, VisibleComponent)
-        // TODO: source of truth for which light to use for CSM should be in renderer state, not DirectionalLightComponent
-        if (component.useInCSM && visible) {
-          activeDirectionalLightEntity = entity
-          activeLight = component.light
-          break
-        }
-      }
+  const UpdateCSMFromActiveDirectionalLight = (props: {
+    activeLightEntity: Entity
+    activeLight?: DirectionalLight
+  }) => {
+    let activeLight = props.activeLight
+    const activeLightEntity = props.activeLightEntity
 
     // track visibility and light properties for CSM updates
-    useOptionalComponent(activeDirectionalLightEntity, VisibleComponent)?.value
-    useOptionalComponent(activeDirectionalLightEntity, DirectionalLightComponent)?.useInCSM.value
+    useOptionalComponent(activeLightEntity, VisibleComponent)?.value
+    useOptionalComponent(activeLightEntity, DirectionalLightComponent)?.useInCSM.value
 
-    const activeLightFromEntity = useOptionalComponent(activeDirectionalLightEntity, DirectionalLightComponent)?.value
-      .light
+    const activeLightFromEntity = useOptionalComponent(activeLightEntity, DirectionalLightComponent)?.value.light
     if (!activeLight) activeLight = activeLightFromEntity
 
     const csmEnabled = useHookstate(getRendererSceneMetadataState(Engine.instance.currentWorld).csm).value
 
+    const shadowsEnabled = useShadowsEnabled()
     const useCSM = shadowsEnabled && csmEnabled
 
     useEffect(() => {
@@ -134,26 +129,54 @@ export default async function ShadowSystem(world: World) {
     }, [useCSM, activeLight])
 
     return null
+  }
+
+  const csmReactor = startReactor(function CSMReactor() {
+    const lightEstimator = useHookstate(xrState.isEstimatingLight)
+    const directionalLights = useQuery([DirectionalLightComponent])
+
+    let activeLight: DirectionalLight | undefined
+
+    // TODO: convert light estimator to an entity to simplify all this logic
+    let activeLightEntity = UndefinedEntity
+    if (lightEstimator.value) activeLight = xrState.lightEstimator.value!.directionalLight
+    else
+      for (const entity of directionalLights) {
+        const component = getComponent(entity, DirectionalLightComponent)
+        const visible = hasComponent(entity, VisibleComponent)
+        // TODO: source of truth for which light to use for CSM should be in renderer state, not DirectionalLightComponent
+        if (component.useInCSM && visible) {
+          activeLightEntity = entity
+          activeLight = component.light
+          break
+        }
+      }
+
+    return React.createElement(UpdateCSMFromActiveDirectionalLight, {
+      activeLightEntity,
+      activeLight,
+      key: activeLightEntity
+    })
   })
 
   const shadowGeometry = new PlaneGeometry(1, 1, 1, 1)
   const shadowMaterial = new MeshBasicMaterial({
     side: DoubleSide,
     transparent: true,
-    opacity: 0.5,
+    opacity: 1,
     depthTest: true,
     depthWrite: false
   })
+
+  const shadowState = hookstate(null as MeshBasicMaterial | null)
 
   AssetLoader.loadAsync(`${config.client.fileServer}/projects/default-project/public/drop-shadow.png`).then(
     (texture: Texture) => {
       shadowMaterial.map = texture
       shadowMaterial.needsUpdate = true
+      shadowState.set(shadowMaterial)
     }
   )
-
-  let dropShadows = new InstancedMesh(shadowGeometry, shadowMaterial, 0)
-  dropShadows.matrixAutoUpdate = false
 
   const castShadowFilter = (entity: Entity) => getComponent(entity, ShadowComponent).cast
 
@@ -161,48 +184,48 @@ export default async function ShadowSystem(world: World) {
 
   let sceneObjects = Array.from(Engine.instance.currentWorld.objectLayerList[ObjectLayers.Camera] || [])
 
-  const dropShadowReactor = startReactor(function (props) {
-    const shadowComponents = useQuery([ShadowComponent, GroupComponent])
+  const minRadius = 0.15
+  const sphere = new Sphere()
+  const box3 = new Box3()
+
+  const dropShadowReactor = startQueryReactor([ShadowComponent], function DropShadowReactor(props) {
+    const entity = props.root.entity
     const useShadows = useShadowsEnabled()
+    const shadowMaterial = useHookstate(shadowState)
+    const groupComponent = useOptionalComponent(entity, GroupComponent)
+    const shadow = useComponent(entity, ShadowComponent)
 
     useEffect(() => {
-      world.scene.remove(dropShadows)
-
-      if (useShadows) {
+      if (
+        Engine.instance.isEditor ||
+        !shadow.cast.value ||
+        !shadowMaterial.value ||
+        useShadows ||
+        !groupComponent ||
+        groupComponent.value.length === 0
+      )
         return
+
+      for (const obj of groupComponent.value) {
+        if (obj.type.includes('Helper')) continue
+        box3.setFromObject(obj)
       }
+      box3.getBoundingSphere(sphere)
 
-      const castShadowEntities = shadowComponents.filter(castShadowFilter)
+      const radius = Math.max(sphere.radius * 2, minRadius)
+      const center = groupComponent.value[0].worldToLocal(sphere.center)
+      const shadowEntity = createEntity()
+      const shadowObject = new Mesh(shadowGeometry, shadowMaterial.value.clone())
+      addObjectToGroup(shadowEntity, shadowObject)
+      addComponent(shadowEntity, NameComponent, 'Shadow for ' + getComponent(entity, NameComponent))
+      addComponent(shadowEntity, VisibleComponent)
+      setComponent(entity, DropShadowComponent, { radius, center, entity: shadowEntity })
 
-      const reinitDropShadows = () => {
-        dropShadows.dispose()
-        dropShadows = new InstancedMesh(shadowGeometry, shadowMaterial, castShadowEntities.length)
-        dropShadows.matrixAutoUpdate = false
-        dropShadows.layers.disable(ObjectLayers.Camera)
-        world.scene.add(dropShadows)
+      return () => {
+        removeComponent(entity, DropShadowComponent)
+        removeEntity(shadowEntity)
       }
-
-      reinitDropShadows()
-
-      for (const entity of castShadowEntities) {
-        const groupComponent = getComponent(entity, GroupComponent)
-        if (!hasComponent(entity, DropShadowComponent) && groupComponent.length) {
-          const minRadius = 0.15
-          const sphere = new Sphere()
-          const box3 = new Box3()
-          for (const obj of groupComponent) box3.setFromObject(obj)
-          box3.getBoundingSphere(sphere)
-          const radius = Math.max(sphere.radius * 2, minRadius)
-          const center = groupComponent[0].worldToLocal(sphere.center)
-          setComponent(entity, DropShadowComponent, { radius, center })
-        }
-      }
-
-      return function cleanup() {
-        world.scene.remove(dropShadows)
-        reinitDropShadows()
-      }
-    }, [shadowComponents, useShadows])
+    }, [useShadows, shadowMaterial, groupComponent, shadow])
 
     return null
   })
@@ -210,47 +233,39 @@ export default async function ShadowSystem(world: World) {
   const shadowOffset = new Vector3(0, 0.01, 0)
 
   const execute = () => {
-    let index = 0
-    const setDropShadowMatrix = (matrix: Matrix4) => {
-      dropShadows.setMatrixAt(index, matrix)
-      index++
-    }
-
     sceneObjects = Array.from(Engine.instance.currentWorld.objectLayerList[ObjectLayers.Camera] || [])
 
     const useShadows = getShadowsEnabled()
-    if (!useShadows) {
+    if (!useShadows && !Engine.instance.isEditor) {
       for (const entity of dropShadowComponentQuery()) {
-        const dropShadowComponent = getComponent(entity, DropShadowComponent)
-
-        if (!dropShadowComponent.center) continue
-
-        const groupComponent = getComponent(entity, GroupComponent)
+        const dropShadow = getComponent(entity, DropShadowComponent)
+        const dropShadowTransform = getComponent(dropShadow.entity, TransformComponent)
 
         raycaster.firstHitOnly = true
-        raycasterPosition.copy(dropShadowComponent.center!)
-        groupComponent[0].localToWorld(raycasterPosition)
+        raycasterPosition.copy(dropShadow.center)
+        getComponent(entity, GroupComponent)[0].localToWorld(raycasterPosition)
         raycaster.set(raycasterPosition, shadowDirection)
 
         const intersected = raycaster.intersectObjects(sceneObjects)[0]
         if (!intersected || !intersected.face) {
-          setDropShadowMatrix(defaultShadowMatrix)
+          dropShadowTransform.scale.setScalar(0)
           continue
         }
 
-        const sizeBias = 1
-        const finalSize =
-          dropShadowComponent.radius * Math.min(dropShadowComponent.bias / intersected.distance, 1) * sizeBias
+        const centerCorrectedDist = Math.max(intersected.distance - dropShadow.center.y, 0.0001)
+
+        //arbitrary bias to make it a bit smaller
+        const sizeBias = 0.3
+        const finalRadius = sizeBias * dropShadow.radius + dropShadow.radius * centerCorrectedDist * 0.5
+
+        const shadowMaterial = (getComponent(dropShadow.entity, GroupComponent)[0] as any).material as Material
+        shadowMaterial.opacity = Math.min(1 / (1 + centerCorrectedDist), 1) * 0.6
 
         shadowRotation.setFromUnitVectors(intersected.face.normal, V_001)
-
-        shadowMatrix.makeRotationFromQuaternion(shadowRotation)
-        shadowSize.setScalar(finalSize)
-        shadowMatrix.scale(shadowSize)
-        shadowMatrix.setPosition(intersected.point.add(shadowOffset))
-        setDropShadowMatrix(shadowMatrix)
+        dropShadowTransform.rotation.copy(shadowRotation)
+        dropShadowTransform.scale.setScalar(finalRadius * 2)
+        dropShadowTransform.position.copy(intersected.point.add(shadowOffset))
       }
-      dropShadows.instanceMatrix.needsUpdate = true
       return
     }
 

@@ -28,8 +28,3 @@ bot:
   service:
     type: ClusterIP
     port: 3030
-
-  serviceAccount:
-    create: true
-    annotations: {}
-    name:

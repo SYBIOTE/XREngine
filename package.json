@@ -1,9 +1,12 @@
 {
-  "name": "xrengine",
-  "description": "Game Engine, Server & Devops powering The XREngine. Please support XRFoundation https://opencollective.com/xrfoundation",
+  "name": "etherealengine",
+  "description": "Engine, Server & Devops powering Ethereal Engine. Please support at https://opencollective.com/etherealengine",
   "version": "0.0.0",
-  "homepage": "xrengine.io",
+  "homepage": "etherealengine.org",
   "private": true,
+  "bin": {
+    "etherealengine": "npx/cli.js"
+  },
   "workspaces": [
     "packages/*",
     "packages/projects/projects/*"
@@ -21,8 +24,8 @@
     "vr"
   ],
   "author": {
-    "name": "XR Engine - XR Foundation",
-    "email": "info@xrengine.io"
+    "name": "Ethereal Engine",
+    "email": "info@etherealengine.org"
   },
   "entrypoint": {},
   "contributors": [],
@@ -52,7 +55,7 @@
     "dev-taskserver": "cd packages/taskserver && npm run dev",
     "dev-docker": "cd scripts && docker-compose up -d",
     "dev-tabs": "cd scripts && ./dev-tabs.sh",
-    "fetch-projects": "lerna exec 'git fetch -p && git rebase' --parallel --ignore @xrengine/*",
+    "fetch-projects": "lerna exec 'git fetch -p && git rebase' --parallel --ignore @etherealengine/*",
     "dev-nginx": "",
     "dev-reinit": "npm run dev-docker && cd packages/server && npm run dev-reinit-db",
     "dev-server": "cd packages/server && npm run dev",
@@ -83,7 +86,6 @@
     "test-e2e": "ts-node --swc scripts/run_e2e_tests.ts",
     "test:projects": "cross-env TEST=true lerna run test:projects",
     "test:ci": "cpy --no-overwrite --rename=.env.local '.env.local.default' . && cross-env CI=true npm run test",
-    "update-name-gh-package": "lerna run update-name-gh-package",
     "validate": "npm run lint && lerna run validate",
     "version-increment": "lerna version --conventional-commits --yes",
     "version-increment-no-tag": "lerna version --conventional-commits --yes --no-git-tag-version",
@@ -126,7 +128,7 @@
     "pre-commit": "1.2.2",
     "prettier": "2.8.1",
     "react-dnd": "16.0.0",
-    "react-router-dom": "5.3.0",
+    "react-router-dom": "6.8.1",
     "rimraf": "^3.0.2",
     "stylelint": "^14.6.1",
     "stylelint-config-standard-scss": "^3.0.0",
@@ -152,7 +154,7 @@
     "react-json-view": "^1.21.3",
     "three": "0.148.0",
     "ts-node": "10.8.2",
-    "typescript": "4.8.3",
+    "typescript": "4.9.5",
     "vite-plugin-node": "^1.0.0",
     "ws": "8.12.0"
   }

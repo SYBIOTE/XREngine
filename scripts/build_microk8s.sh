@@ -39,7 +39,7 @@ fi
 
 if [ -z "$MYSQL_DATABASE" ]
 then
-  MYSQL_DATABASE=xrengine
+  MYSQL_DATABASE=etherealengine
 else
   MYSQL_DATABASE=$MYSQL_DATABASE
 fi
@@ -100,7 +100,7 @@ else
   NODE_ENV=$NODE_ENV
 fi
 
-docker start xrengine_minikube_db
+docker start etherealengine_minikube_db
 
 mkdir -p ./project-package-jsons/projects/default-project
 cp ./packages/projects/default-project/package.json ./project-package-jsons/projects/default-project
@@ -110,8 +110,7 @@ find ./packages/projects/projects -name package.json -exec bash -c 'mkdir -p ./p
 
 docker push $REGISTRY_HOST:32000/root-builder
 
->>com
-DOCKER_BUILDKIT=1 docker build --network=host -t $REGISTRY_HOST:32000/xrengine \
+DOCKER_BUILDKIT=1 docker build --network=host -t $REGISTRY_HOST:32000/etherealengine \
   --build-arg NODE_ENV=$NODE_ENV \
   --build-arg MYSQL_HOST=$MYSQL_HOST \
   --build-arg MYSQL_PORT=$MYSQL_PORT \
@@ -128,9 +127,8 @@ DOCKER_BUILDKIT=1 docker build --network=host -t $REGISTRY_HOST:32000/xrengine \
   --build-arg VITE_8TH_WALL=$VITE_8TH_WALL \
   --build-arg VITE_LOGIN_WITH_WALLET=$VITE_LOGIN_WITH_WALLET .
 
-docker push $REGISTRY_HOST:32000/xrengine
+docker push $REGISTRY_HOST:32000/etherealengine
 
-DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/xrengine-testbot -f ./dockerfiles/testbot/Dockerfile-testbot .
+#DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/etherealengine-testbot -f ./dockerfiles/testbot/Dockerfile-testbot .
 
-docker push $REGISTRY_HOST:32000/xrengine-testbot
-com
+# docker push $REGISTRY_HOST:32000/etherealengine-testbot
