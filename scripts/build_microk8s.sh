@@ -103,13 +103,14 @@ fi
 docker start xrengine_minikube_db
 
 mkdir -p ./project-package-jsons/projects/default-project
-cp packages/projects/default-project/package.json ./project-package-jsons/projects/default-project
-find packages/projects/projects/ -name package.json -exec bash -c 'mkdir -p ./project-package-jsons/$(dirname $1) && cp $1 ./project-package-jsons/$(dirname $1)' - '{}' \;
+cp ./packages/projects/default-project/package.json ./project-package-jsons/projects/default-project
+find ./packages/projects/projects -name package.json -exec bash -c 'mkdir -p ./project-package-jsons/$(dirname $1) && cp $1 ./project-package-jsons/$(dirname $1)' - '{}' \;
 
-DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/root-builder -f dockerfiles/package-root/Dockerfile-root .
+#DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/root-builder -f dockerfiles/package-root/Dockerfile-root .
 
 docker push $REGISTRY_HOST:32000/root-builder
 
+>>com
 DOCKER_BUILDKIT=1 docker build --network=host -t $REGISTRY_HOST:32000/xrengine \
   --build-arg NODE_ENV=$NODE_ENV \
   --build-arg MYSQL_HOST=$MYSQL_HOST \
@@ -129,6 +130,7 @@ DOCKER_BUILDKIT=1 docker build --network=host -t $REGISTRY_HOST:32000/xrengine \
 
 docker push $REGISTRY_HOST:32000/xrengine
 
-#DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/xrengine-testbot -f ./dockerfiles/testbot/Dockerfile-testbot .
+DOCKER_BUILDKIT=1 docker build -t $REGISTRY_HOST:32000/xrengine-testbot -f ./dockerfiles/testbot/Dockerfile-testbot .
 
-# docker push $REGISTRY_HOST:32000/xrengine-testbot
+docker push $REGISTRY_HOST:32000/xrengine-testbot
+com

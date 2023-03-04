@@ -141,6 +141,7 @@
     "app-root-path": "3.0.0",
     "cli": "1.0.1",
     "dotenv": "14.3.2",
+    "expect-puppeteer": "^7.0.1",
     "fix-esm": "^1.0.1",
     "lerna": "4.0.0",
     "patch-package": "^6.5.1",

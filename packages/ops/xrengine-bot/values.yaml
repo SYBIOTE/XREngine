@@ -10,7 +10,7 @@ bot:
 
   replicaCount: 1
   image:
-    repository: lagunalabs/xrengine-bot
+    repository: sybiote/xrengine-testbot
     tag: latest
     pullPolicy: IfNotPresent
 

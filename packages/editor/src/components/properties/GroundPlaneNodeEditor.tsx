@@ -6,9 +6,9 @@ import { GroundPlaneComponent } from '@xrengine/engine/src/scene/components/Grou
 
 import SquareIcon from '@mui/icons-material/Square'
 
-import BooleanInput from '../inputs/BooleanInput'
 import ColorInput from '../inputs/ColorInput'
 import InputGroup from '../inputs/InputGroup'
+import LlmProperties from './MetadataProperties'
 import NodeEditor from './NodeEditor'
 import ShadowProperties from './ShadowProperties'
 import { EditorComponentType, updateProperty } from './Util'
@@ -27,6 +27,7 @@ export const GroundPlaneNodeEditor: EditorComponentType = (props) => {
       <InputGroup name="Color" label={t('editor:properties.groundPlane.lbl-color')}>
         <ColorInput value={groundPlaneComponent.color} onChange={updateProperty(GroundPlaneComponent, 'color')} />
       </InputGroup>
+      <LlmProperties node={props.node} />
       <ShadowProperties node={props.node} />
     </NodeEditor>
   )

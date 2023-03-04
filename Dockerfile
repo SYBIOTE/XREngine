@@ -1,8 +1,7 @@
 # not slim because we need github depedencies
 FROM node:18-buster-slim
 
-RUN apt-get update
-RUN apt-get install -y build-essential meson python3-testresources python3-venv python3-pip git procps
+RUN apt-get update && apt-get install -y build-essential meson python3-testresources python3-venv python3-pip git procps
 # Create app directory
 WORKDIR /app
 
@@ -29,7 +28,8 @@ COPY patches/ ./patches/
 #RUN  npm ci --verbose  # we should make lockfile or shrinkwrap then use npm ci for predicatble builds
 
 ARG NODE_ENV
-RUN npm install --loglevel notice --legacy-peer-deps
+RUN npm config set registry https://registry.npmjs.org/
+RUN npm install --loglevel notice --legacy-peer-deps --verbose
 
 COPY . .
 

@@ -9,7 +9,7 @@ import { EditorComponentType } from './Util'
  * DefaultNodeEditor  used to render view when no element is selected
  */
 export const DefaultNodeEditor: EditorComponentType = (props) => {
-  return <NodeEditor {...props} />
+  return <NodeEditor {...props}></NodeEditor>
 }
 
 DefaultNodeEditor.iconComponent = LanguageIcon

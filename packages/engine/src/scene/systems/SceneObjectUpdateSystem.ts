@@ -32,6 +32,11 @@ import {
   SCENE_COMPONENT_INTERIOR,
   SCENE_COMPONENT_INTERIOR_DEFAULT_VALUES
 } from '../components/InteriorComponent'
+import {
+  MetadataComponent,
+  SCENE_COMPONENT_METADATA,
+  SCENE_COMPONENT_METADATA_DEFAULT_VALUES
+} from '../components/MetadataComponent'
 import { ModelComponent, SCENE_COMPONENT_MODEL } from '../components/ModelComponent'
 import {
   OceanComponent,
@@ -84,7 +89,8 @@ import { deserializeWater } from '../functions/loaders/WaterFunctions'
 export const defaultSpatialComponents: ComponentJson[] = [
   { name: SCENE_COMPONENT_TRANSFORM, props: SCENE_COMPONENT_TRANSFORM_DEFAULT_VALUES },
   { name: SCENE_COMPONENT_VISIBLE, props: true },
-  { name: SCENE_COMPONENT_SHADOW, props: SCENE_COMPONENT_SHADOW_DEFAULT_VALUES }
+  { name: SCENE_COMPONENT_SHADOW, props: SCENE_COMPONENT_SHADOW_DEFAULT_VALUES },
+  { name: SCENE_COMPONENT_METADATA, props: SCENE_COMPONENT_METADATA_DEFAULT_VALUES }
 ]
 
 export const ScenePrefabs = {
@@ -123,6 +129,9 @@ export default async function SceneObjectUpdateSystem(world: World) {
   world.sceneLoadingRegistry.set(SCENE_COMPONENT_SHADOW, {
     defaultData: true
   })
+
+  world.sceneComponentRegistry.set(MetadataComponent.name, SCENE_COMPONENT_METADATA)
+  world.sceneLoadingRegistry.set(SCENE_COMPONENT_METADATA, {})
 
   world.sceneComponentRegistry.set(PreventBakeTagComponent.name, SCENE_COMPONENT_PREVENT_BAKE)
   world.sceneLoadingRegistry.set(SCENE_COMPONENT_PREVENT_BAKE, {})
@@ -254,9 +263,7 @@ export default async function SceneObjectUpdateSystem(world: World) {
   })
 
   world.scenePrefabRegistry.set(ScenePrefabs.groundPlane, [
-    { name: SCENE_COMPONENT_TRANSFORM, props: SCENE_COMPONENT_TRANSFORM_DEFAULT_VALUES },
-    { name: SCENE_COMPONENT_VISIBLE, props: true },
-    { name: SCENE_COMPONENT_SHADOW, props: { receive: true, cast: false } },
+    ...defaultSpatialComponents,
     { name: SCENE_COMPONENT_GROUND_PLANE, props: {} }
   ])
 
@@ -395,6 +402,9 @@ export default async function SceneObjectUpdateSystem(world: World) {
 
     world.sceneComponentRegistry.delete(ShadowComponent.name)
     world.sceneLoadingRegistry.delete(SCENE_COMPONENT_SHADOW)
+
+    world.sceneComponentRegistry.delete(MetadataComponent.name)
+    world.sceneLoadingRegistry.delete(SCENE_COMPONENT_METADATA)
 
     world.sceneComponentRegistry.delete(PreventBakeTagComponent.name)
     world.sceneLoadingRegistry.delete(SCENE_COMPONENT_PREVENT_BAKE)
