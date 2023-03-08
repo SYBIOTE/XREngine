@@ -129,9 +129,6 @@ export default async function SceneObjectUpdateSystem() {
     defaultData: true
   })
 
-  world.sceneComponentRegistry.set(MetadataComponent.name, SCENE_COMPONENT_METADATA)
-  world.sceneLoadingRegistry.set(SCENE_COMPONENT_METADATA, {})
-
   Engine.instance.sceneComponentRegistry.set(PreventBakeTagComponent.name, SCENE_COMPONENT_PREVENT_BAKE)
   Engine.instance.sceneLoadingRegistry.set(SCENE_COMPONENT_PREVENT_BAKE, {})
 
@@ -399,8 +396,8 @@ export default async function SceneObjectUpdateSystem() {
     Engine.instance.sceneComponentRegistry.delete(VisibleComponent.name)
     Engine.instance.sceneLoadingRegistry.delete(SCENE_COMPONENT_VISIBLE)
 
-    world.sceneComponentRegistry.delete(ShadowComponent.name)
-    world.sceneLoadingRegistry.delete(SCENE_COMPONENT_SHADOW)
+    Engine.instance.sceneComponentRegistry.delete(ShadowComponent.name)
+    Engine.instance.sceneLoadingRegistry.delete(SCENE_COMPONENT_SHADOW)
 
     Engine.instance.sceneComponentRegistry.delete(PreventBakeTagComponent.name)
     Engine.instance.sceneLoadingRegistry.delete(SCENE_COMPONENT_PREVENT_BAKE)
