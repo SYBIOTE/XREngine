@@ -27,8 +27,8 @@ export const GroundPlaneNodeEditor: EditorComponentType = (props) => {
       <InputGroup name="Color" label={t('editor:properties.groundPlane.lbl-color')}>
         <ColorInput value={groundPlaneComponent.color} onChange={updateProperty(GroundPlaneComponent, 'color')} />
       </InputGroup>
-      <LlmProperties node={props.node} />
-      <ShadowProperties node={props.node} />
+      <LlmProperties entity={props.entity} />
+      <ShadowProperties entity={props.entity} />
     </NodeEditor>
   )
 }

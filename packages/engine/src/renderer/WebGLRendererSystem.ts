@@ -47,6 +47,7 @@ import { nowMilliseconds } from '../common/functions/nowMilliseconds'
 import { overrideOnBeforeCompile } from '../common/functions/OnBeforeCompilePlugin'
 import { Engine } from '../ecs/classes/Engine'
 import { EngineActions, getEngineState } from '../ecs/classes/EngineState'
+import { EngineState } from '../ecs/classes/EngineState'
 import { Scene } from '../ecs/classes/Scene'
 import { getComponent } from '../ecs/functions/ComponentFunctions'
 import { GroupComponent } from '../scene/components/GroupComponent'
@@ -224,6 +225,7 @@ export class EngineRenderer {
    * @param delta Time since last frame.
    */
   execute(delta: number): void {
+    if (getMutableState(EngineState).isBot) return
     const xrCamera = EngineRenderer.instance.xrManager.getCamera()
     const xrFrame = Engine.instance.xrFrame
 

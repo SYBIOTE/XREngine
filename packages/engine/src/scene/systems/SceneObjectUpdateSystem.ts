@@ -31,11 +31,6 @@ import {
   SCENE_COMPONENT_INTERIOR,
   SCENE_COMPONENT_INTERIOR_DEFAULT_VALUES
 } from '../components/InteriorComponent'
-import {
-  MetadataComponent,
-  SCENE_COMPONENT_METADATA,
-  SCENE_COMPONENT_METADATA_DEFAULT_VALUES
-} from '../components/MetadataComponent'
 import { ModelComponent, SCENE_COMPONENT_MODEL } from '../components/ModelComponent'
 import {
   OceanComponent,
@@ -88,8 +83,7 @@ import { deserializeWater } from '../functions/loaders/WaterFunctions'
 export const defaultSpatialComponents: ComponentJson[] = [
   { name: SCENE_COMPONENT_TRANSFORM, props: SCENE_COMPONENT_TRANSFORM_DEFAULT_VALUES },
   { name: SCENE_COMPONENT_VISIBLE, props: true },
-  { name: SCENE_COMPONENT_SHADOW, props: SCENE_COMPONENT_SHADOW_DEFAULT_VALUES },
-  { name: SCENE_COMPONENT_METADATA, props: SCENE_COMPONENT_METADATA_DEFAULT_VALUES }
+  { name: SCENE_COMPONENT_SHADOW, props: SCENE_COMPONENT_SHADOW_DEFAULT_VALUES }
 ]
 
 export const ScenePrefabs = {
