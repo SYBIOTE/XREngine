@@ -32,19 +32,19 @@ export const AppLoadingServiceReceptor = (action) => {
       })
     })
 }
-
+/**@deprecated use getMutableState directly instead */
 export const accessLoadingState = () => getMutableState(AppLoadingState)
-
+/**@deprecated use useHookstate(getMutableState(...) directly instead */
 export const useLoadingState = () => useState(accessLoadingState())
 
 export class AppLoadingAction {
   static setLoadPercent = defineAction({
-    type: 'xre.client.AppLoading.SET_LOADING_PERCENT' as const,
+    type: 'ee.client.AppLoading.SET_LOADING_PERCENT' as const,
     loadPercent: matches.number
   })
 
   static setLoadingState = defineAction({
-    type: 'xre.client.AppLoading.SET_LOADING_STATE' as const,
+    type: 'ee.client.AppLoading.SET_LOADING_STATE' as const,
     state: matches.string as Validator<unknown, AppLoadingStatesType>
   })
 }

@@ -30,8 +30,9 @@ export const WebxrNativeServiceReceptor = (action) => {
       return s.webxrnative.set(!s.webxrnative.value)
     })
 }
-
+/**@deprecated use getMutableState directly instead */
 export const accessWebxrNativeState = () => getMutableState(WebxrState)
+/**@deprecated use useHookstate(getMutableState(...) directly instead */
 export const useWebxrNativeState = () => useState(accessWebxrNativeState())
 
 //Service
@@ -55,9 +56,9 @@ export const WebxrNativeService = {
 
 export class WebxrNativeAction {
   static setWebXrNative = defineAction({
-    type: 'xre.client.WebxrNative.SET_WEBXRNATIVE' as const
+    type: 'ee.client.WebxrNative.SET_WEBXRNATIVE' as const
   })
   static toggleWebXrNative = defineAction({
-    type: 'xre.client.WebxrNative.TOGGLE_WEBXRNATIVE' as const
+    type: 'ee.client.WebxrNative.TOGGLE_WEBXRNATIVE' as const
   })
 }

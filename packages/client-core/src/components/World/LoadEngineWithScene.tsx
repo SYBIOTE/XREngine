@@ -27,21 +27,18 @@ import { AppLoadingAction, AppLoadingStates, useLoadingState } from '../../commo
 import { NotificationService } from '../../common/services/NotificationService'
 import { useRouter } from '../../common/services/RouterService'
 import { useLocationState } from '../../social/services/LocationService'
-import { SocketWebRTCClientNetwork } from '../../transports/SocketWebRTCClientNetwork'
+import { SocketWebRTCClientNetwork } from '../../transports/SocketWebRTCClientFunctions'
 import { initClient, loadScene } from './LocationLoadHelper'
 
 const logger = multiLogger.child({ component: 'client-core:world' })
 
 type LoadEngineProps = {
-  setClientReady: (ready: boolean) => void
   injectedSystems?: SystemModuleType<any>[]
 }
 
-export const useLoadEngine = ({ setClientReady, injectedSystems }: LoadEngineProps) => {
+export const useLoadEngine = ({ injectedSystems }: LoadEngineProps) => {
   useEffect(() => {
-    initClient(injectedSystems).then(() => {
-      setClientReady(true)
-    })
+    initClient(injectedSystems)
 
     addActionReceptor(SceneServiceReceptor)
     addActionReceptor(LocationInstanceConnectionServiceReceptor)
@@ -85,12 +82,12 @@ export const useLocationSpawnAvatar = (spectate = false) => {
       ? getSpawnPoint(spawnPoint, Engine.instance.userId)
       : getRandomSpawnPoint(Engine.instance.userId)
 
-    if (avatarDetails.modelResource?.url)
+    if (avatarDetails.modelResource?.LOD0_url || (avatarDetails.modelResource as any).src)
       spawnLocalAvatarInWorld({
         avatarSpawnPose,
         avatarDetail: {
-          avatarURL: avatarDetails.modelResource?.url!,
-          thumbnailURL: avatarDetails.thumbnailResource?.url!
+          avatarURL: avatarDetails.modelResource?.LOD0_url || (avatarDetails.modelResource as any)?.src,
+          thumbnailURL: avatarDetails.thumbnailResource?.LOD0_url || (avatarDetails.thumbnailResource as any)?.src
         },
         name: user.name.value
       })
@@ -162,9 +159,8 @@ export const LoadEngineWithScene = ({ injectedSystems, spectate }: Props) => {
   const engineState = useEngineState()
   const sceneState = useSceneState()
   const loadingState = useLoadingState()
-  const [clientReady, setClientReady] = useState(false)
 
-  useLoadEngine({ setClientReady, injectedSystems })
+  useLoadEngine({ injectedSystems })
   useLocationSpawnAvatar(spectate)
   usePortalTeleport()
 
@@ -175,12 +171,12 @@ export const LoadEngineWithScene = ({ injectedSystems, spectate }: Props) => {
     // loadScene() deserializes the scene data, and deserializers sometimes mutate/update that data for backwards compatability.
     // Since hookstate throws errors when mutating proxied values, we have to pass down the unproxied value here
     const sceneData = sceneState.currentScene.get({ noproxy: true })
-    if (clientReady && sceneData) {
+    if (engineState.isEngineInitialized.value && sceneData) {
       if (loadingState.state.value !== AppLoadingStates.SUCCESS)
         dispatchAction(AppLoadingAction.setLoadingState({ state: AppLoadingStates.SCENE_LOADING }))
       loadScene(sceneData)
     }
-  }, [clientReady, sceneState.currentScene])
+  }, [engineState.isEngineInitialized, sceneState.currentScene])
 
   useEffect(() => {
     if (engineState.sceneLoaded.value && loadingState.state.value !== AppLoadingStates.SUCCESS)
