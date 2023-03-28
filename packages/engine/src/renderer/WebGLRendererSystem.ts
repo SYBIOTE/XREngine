@@ -226,7 +226,6 @@ export class EngineRenderer {
    * @param delta Time since last frame.
    */
   execute(delta: number): void {
-    if (getMutableState(EngineState).isBot) return
     const xrCamera = EngineRenderer.instance.xrManager.getCamera()
     const xrFrame = Engine.instance.xrFrame
 
