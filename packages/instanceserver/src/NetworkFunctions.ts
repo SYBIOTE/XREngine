@@ -28,6 +28,7 @@ import multiLogger from '@etherealengine/server-core/src/ServerLogger'
 import { ServerState } from '@etherealengine/server-core/src/ServerState'
 import getLocalServerIp from '@etherealengine/server-core/src/util/get-local-server-ip'
 
+import { InstanceServerState } from './InstanceServerState'
 import { SocketWebRTCServerNetwork } from './SocketWebRTCServerFunctions'
 import { closeTransport } from './WebRTCFunctions'
 
@@ -35,12 +36,15 @@ const logger = multiLogger.child({ component: 'instanceserver:network' })
 const isNameRegex = /instanceserver-([a-zA-Z0-9]{5}-[a-zA-Z0-9]{5})/
 
 export const setupSubdomain = async () => {
-  const app = getState(ServerState).app as Application
+  const app = Engine.instance.api as Application
   let stringSubdomainNumber: string
+
+  const serverState = getState(ServerState)
+  const instanceServerState = getMutableState(InstanceServerState)
 
   if (config.kubernetes.enabled) {
     await cleanupOldInstanceservers(app)
-    app.instanceServer = await app.agonesSDK.getGameServer()
+    instanceServerState.instanceServer.set(await serverState.agonesSDK.getGameServer())
 
     // We used to provision subdomains for instanceservers, e.g. 00001.instanceserver.domain.com
     // This turned out to be unnecessary, and in fact broke Firefox's ability to connect via
@@ -71,8 +75,10 @@ export const setupSubdomain = async () => {
   }
 
   // Set up our instanceserver according to our current environment
-  const localIp = await getLocalServerIp(app.isChannelInstance)
-  const announcedIp = config.kubernetes.enabled ? app.instanceServer.status.address : localIp.ipAddress
+  const localIp = await getLocalServerIp(instanceServerState.isMediaInstance.value)
+  const announcedIp = config.kubernetes.enabled
+    ? instanceServerState.instanceServer.value.status.address
+    : localIp.ipAddress
 
   localConfig.mediasoup.webRtcTransport.listenIps = [
     {
@@ -83,7 +89,7 @@ export const setupSubdomain = async () => {
 }
 
 export async function getFreeSubdomain(isIdentifier: string, subdomainNumber: number): Promise<string> {
-  const app = getState(ServerState).app
+  const app = Engine.instance.api as Application
 
   const stringSubdomainNumber = subdomainNumber.toString().padStart(config.instanceserver.identifierDigits, '0')
   const subdomainResult = await app.service('instanceserver-subdomain-provision').find({
@@ -138,6 +144,8 @@ export async function getFreeSubdomain(isIdentifier: string, subdomainNumber: nu
 }
 
 export async function cleanupOldInstanceservers(app: Application): Promise<void> {
+  const serverState = getState(ServerState)
+
   const instances = await app.service('instance').Model.findAndCountAll({
     offset: 0,
     limit: 1000,
@@ -145,7 +153,7 @@ export async function cleanupOldInstanceservers(app: Application): Promise<void>
       ended: false
     }
   })
-  const instanceservers = await app.k8AgonesClient.listNamespacedCustomObject(
+  const instanceservers = await serverState.k8AgonesClient.listNamespacedCustomObject(
     'agones.dev',
     'v1',
     'default',
@@ -270,11 +278,13 @@ export const handleConnectingPeer = async (network: SocketWebRTCServerNetwork, s
 
   const spectating = network.peers.get(peerID)!.spectating
 
-  const app = getState(ServerState).app
+  const instanceServerState = getState(InstanceServerState)
+
+  const app = Engine.instance.api as Application
 
   app.service('message').create(
     {
-      targetObjectId: app.instance.id,
+      targetObjectId: instanceServerState.instance.id,
       targetObjectType: 'instance',
       text: `${user.name} joined` + (spectating ? ' as spectator' : ''),
       isNotification: true
@@ -316,9 +326,11 @@ export async function handleJoinWorld(
     id: messageId
   })
 
-  const app = getState(ServerState).app
+  const app = Engine.instance.api as Application
 
-  if (data.inviteCode && !app.isChannelInstance) await getUserSpawnFromInvite(network, user, data.inviteCode!)
+  const instanceServerState = getState(InstanceServerState)
+  if (data.inviteCode && !instanceServerState.isMediaInstance)
+    await getUserSpawnFromInvite(network, user, data.inviteCode!)
 }
 
 const getUserSpawnFromInvite = async (
@@ -328,7 +340,7 @@ const getUserSpawnFromInvite = async (
   iteration = 0
 ) => {
   if (inviteCode) {
-    const app = getState(ServerState).app
+    const app = Engine.instance.api as Application
     const result = (await app.service('user').find({
       query: {
         action: 'invite-code-lookup',
@@ -415,10 +427,11 @@ export async function handleDisconnect(network: SocketWebRTCServerNetwork, spark
     const state = getMutableState(WorldState)
     const userName = state.userNames[userId].value
 
-    const app = getState(ServerState).app
+    const instanceServerState = getState(InstanceServerState)
+    const app = Engine.instance.api as Application
     app.service('message').create(
       {
-        targetObjectId: app.instance.id,
+        targetObjectId: instanceServerState.instance.id,
         targetObjectType: 'instance',
         text: `${userName} left`,
         isNotification: true

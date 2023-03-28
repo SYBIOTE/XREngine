@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
@@ -12,7 +12,6 @@ import {
   ClientSettingsServiceReceptor
 } from '@etherealengine/client-core/src/admin/services/Setting/ClientSettingService'
 import ErrorBoundary from '@etherealengine/client-core/src/common/components/ErrorBoundary'
-import { AppLoadingServiceReceptor } from '@etherealengine/client-core/src/common/services/AppLoadingService'
 import { AppServiceReceptor } from '@etherealengine/client-core/src/common/services/AppService'
 import { DialogServiceReceptor } from '@etherealengine/client-core/src/common/services/DialogService'
 import { MediaInstanceConnectionServiceReceptor } from '@etherealengine/client-core/src/common/services/MediaInstanceConnectionService'
@@ -27,13 +26,14 @@ import { InviteService, InviteServiceReceptor } from '@etherealengine/client-cor
 import { LocationServiceReceptor } from '@etherealengine/client-core/src/social/services/LocationService'
 import { AuthService, AuthServiceReceptor } from '@etherealengine/client-core/src/user/services/AuthService'
 import { AvatarServiceReceptor } from '@etherealengine/client-core/src/user/services/AvatarService'
+import { AppLoadingServiceReceptor } from '@etherealengine/engine/src/common/AppLoadingService'
 import { addActionReceptor, getMutableState, removeActionReceptor, useHookstate } from '@etherealengine/hyperflux'
 import LoadingCircle from '@etherealengine/ui/src/primitives/tailwind/LoadingCircle'
 
-import Recorder from '../pages/recorder/[locationName]'
+import Capture from '../pages/capture/[locationName]'
 import { CustomRoute, getCustomRoutes } from './getCustomRoutes'
 
-function RecorderComp() {
+function CaptureComp() {
   const [customRoutes, setCustomRoutes] = useState(null as any as CustomRoute[])
   const clientSettingsState = useHookstate(getMutableState(AdminClientSettingsState))
   const authSettingsState = useHookstate(getMutableState(AuthSettingsState))
@@ -117,12 +117,12 @@ function RecorderComp() {
     <ErrorBoundary>
       <Suspense fallback={<LoadingCircle message={t('common:loader.loadingLocation')} />}>
         <Routes>
-          <Route path=":locationName" element={<Recorder />} />
-          <Route path="/" element={<Navigate to="/recorder/default" />} />
+          <Route path=":locationName" element={<Capture />} />
+          <Route path="/" element={<Navigate to="/capture/default" />} />
         </Routes>
       </Suspense>
     </ErrorBoundary>
   )
 }
 
-export default RecorderComp
+export default CaptureComp
