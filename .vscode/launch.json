@@ -97,12 +97,6 @@
             "type": "node-terminal",
         },
         {
-            "command": "npm run prepare-database",
-            "name": "npm run prepare-database",
-            "request": "launch",
-            "type": "node-terminal",
-        },
-        {
             "command": "npm run dev-taskserver",
             "name": "npm run dev-taskserver",
             "request": "launch",
